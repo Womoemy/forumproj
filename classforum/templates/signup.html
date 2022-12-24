@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign up to Class Forums{% endblock title %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10 col-sm-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Sign up</h3>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% include 'includes/form.html' %}
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary my-2">Create an account</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-muted text-center">
+                    Already have an account? <a href="{% url 'login' %}" class="text-decoration-none">Log in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+    
+

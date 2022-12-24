@@ -1,0 +1,8 @@
+.navbar-brand {
+    font-family: 'Acme', sans-serif;
+    font-size: 32px;
+}
+#mainMenu {
+    justify-content: flex-end; 
+    /* font-size: 32px; */
+}
