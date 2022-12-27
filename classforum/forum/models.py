@@ -21,7 +21,8 @@ class Topic(models.Model):
     last_update = models.DateTimeField(auto_now_add=True)
     forum = models.ForeignKey(Forum, related_name='topics', on_delete=models.CASCADE)
     starter = models.ForeignKey(User, related_name='topics', on_delete=models.CASCADE)
-
+    views = models.PositiveIntegerField(default=0)
+    
     def __str__(self):
         return self.subject
 

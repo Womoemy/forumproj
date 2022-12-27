@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.db.models import Count
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Forum, Topic, Post
@@ -12,7 +12,11 @@ def home(request):
 
 def forum_topics(request, pk):
     forum = get_object_or_404(Forum, pk=pk)
-    context = {'forum': forum}
+    topics = forum.topics.order_by('-last_update').annotate(replies=Count('posts') - 1)
+    context = {
+        'forum': forum,
+        'topics': topics
+    }
     return render(request, 'topics.html', context)
 
 @login_required
@@ -41,6 +45,8 @@ def new_topic(request, pk):
 
 def topic_posts(request, pk, topic_pk):
     topic = get_object_or_404(Topic, forum__pk=pk, pk=topic_pk)
+    topic.views += 1
+    topic.save()
     return render(request, 'topic_posts.html', {'topic': topic})
 
 @login_required
