@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}My account{% endblock title %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">My account</li>
+{% endblock breadcrumb %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-lg-6 col-md-8 col-sm-10">
+            {% comment %} <div class="card"> {% endcomment %}
+                {% comment %} <div class="card-body"> {% endcomment %}
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% include 'includes/form.html' %}                     
+                        <button type="submit" class="btn btn-success my-2">Save changes</button>
+                    </form>
+                {% comment %} </div> {% endcomment %}
+                {% comment %} <div class="card-footer text-muted text-center">
+                    Already have an account? <a href="{% url 'login' %}" class="text-decoration-none">Log in</a>
+                </div> {% endcomment %}
+            {% comment %} </div> {% endcomment %}
+        </div>
+    </div>
+{% endblock content %}

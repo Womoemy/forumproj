@@ -1,11 +1,11 @@
 from django.test import TestCase
 from django.urls import reverse, resolve
-from ..views import forum_topics
+from ..views import TopicListView
 from ..models import Forum
 
 class ForumTopicsTests(TestCase):
     def setUp(self):
-        Forum.objects.create(name='Django', description='Django board.')
+        Forum.objects.create(name='Django', description='Django forum.')
         
     def test_forum_topics_view_success_status_code(self):
         url = reverse('forum_topics', kwargs={'pk': 1})
@@ -19,7 +19,7 @@ class ForumTopicsTests(TestCase):
         
     def test_forum_topics_url_resolves_forum_topics_view(self):
         view = resolve('/forums/1/')
-        self.assertEquals(view.func, forum_topics)
+        self.assertEquals(view.func.view_class, TopicListView)
         
     def test_forum_topics_view_contains_link_back_to_homepage(self):
         forum_topics_url = reverse('forum_topics', kwargs={'pk': 1})

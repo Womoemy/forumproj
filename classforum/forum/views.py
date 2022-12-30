@@ -1,23 +1,53 @@
+from django.utils import timezone
 from django.db.models import Count
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.urls import reverse_lazy
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Forum, Topic, Post
 from .forms import NewTopicForm, PostForm
+from django.views.generic import CreateView, UpdateView, ListView
 
 # Create your views here.
-def home(request):
-    forums = Forum.objects.all()
-    context = {'forums': forums}
-    return render(request, 'home.html', context)
 
-def forum_topics(request, pk):
-    forum = get_object_or_404(Forum, pk=pk)
-    topics = forum.topics.order_by('-last_update').annotate(replies=Count('posts') - 1)
-    context = {
-        'forum': forum,
-        'topics': topics
-    }
-    return render(request, 'topics.html', context)
+class ForumListView(ListView):
+    model = Forum
+    context_object_name = 'forums'
+    template_name = "home.html"
+
+class TopicListView(ListView):
+    model = Topic
+    context_object_name = 'topics'
+    template_name = 'topics.html'
+    paginate_by = 20
+    
+    def get_context_data(self, **kwargs):
+        kwargs['forum'] = self.forum
+        return super().get_context_data(**kwargs)
+    
+    def get_queryset(self):
+        self.forum = get_object_or_404(Forum, pk=self.kwargs.get('pk'))
+        queryset = self.forum.topics.order_by('-last_update').annotate(replies=Count('posts') - 1)
+        return queryset
+    
+class PostListView(ListView):
+    model = Post
+    template_name = "topic_posts.html"
+    context_object_name = 'posts'
+    paginate_by = 20
+    
+    def get_context_data(self, **kwargs):
+        self.topic.views += 1
+        self.topic.save()
+        kwargs['topic'] = self.topic
+        return super().get_context_data(**kwargs)
+    
+    def get_queryset(self):
+        self.topic = get_object_or_404(Topic, forum__pk=self.kwargs.get('pk'), pk=self.kwargs.get('topic_pk'))
+        queryset = self.topic.posts.order_by('created_at')
+        return queryset
+
 
 @login_required
 def new_topic(request, pk):
@@ -37,17 +67,14 @@ def new_topic(request, pk):
             return redirect('topic_posts', pk=pk, topic_pk=topic.pk)
     else:
         form = NewTopicForm()
-    context = {
-        'forum': forum,
-        'form': form
-    }
-    return render(request, 'new_topic.html', context)
+    
+    return render(request, 'new_topic.html', {'forum': forum,'form': form})
 
-def topic_posts(request, pk, topic_pk):
-    topic = get_object_or_404(Topic, forum__pk=pk, pk=topic_pk)
-    topic.views += 1
-    topic.save()
-    return render(request, 'topic_posts.html', {'topic': topic})
+# def topic_posts(request, pk, topic_pk):
+#     topic = get_object_or_404(Topic, forum__pk=pk, pk=topic_pk)
+#     topic.views += 1
+#     topic.save()
+#     return render(request, 'topic_posts.html', {'topic': topic})
 
 @login_required
 def reply_topic(request, pk, topic_pk):
@@ -63,6 +90,55 @@ def reply_topic(request, pk, topic_pk):
     else:
         form = PostForm()
     return render(request, 'reply_topic.html', {'topic': topic, 'form': form})
+
+# def new_post(request):
+#     if request.method == 'POST':
+#         form = PostForm(request.POST)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('post_list')
+#     else:
+#         form = PostForm(request.POST)
+#     return render(request, 'new_post.html', {'form': form})
+
+
+# class NewPostView(View):
+#     def post(self, request):
+#         form = PostForm(request.POST)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('post_list')
+#         return render(request, 'new_post', {'form': form})
+    
+#     def get(self, request):
+#         form = PostForm()
+#         return render(request, 'new_post', {'form': form})
+    
+class NewPostView(CreateView):
+    model = Post
+    form_class = PostForm
+    success_url = reverse_lazy('post_list')
+    template_name = 'new_post.html'
+    
+ 
+@method_decorator(login_required, name='dispatch')   
+class PostUpdateView(UpdateView):
+    model = Post
+    template_name = "edit_post.html"
+    fields = ['message',]
+    pk_url_kwarg = 'post_pk'
+    context_object_name = 'post'
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.filter(created_by=self.request.user)
+    
+    def form_valid(self, form):
+        post = form.save(commit=False)
+        post.updated_by = self.request.user
+        post.updated_at = timezone.now()
+        post.save()
+        return redirect('topic_posts', pk=post.topic.forum.pk, topic_pk=post.topic.pk)
 
 # experimented changing the url patterns to names of the forums
 # def forum_topics(request, name):
